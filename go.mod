@@ -1,4 +1,4 @@
-module github.com/alpensin/alphabet
+module github.com/Alpensin/learn-alphabet
 
 go 1.22.0
 
