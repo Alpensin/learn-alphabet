@@ -41,10 +41,10 @@ func (m model) Init() btea.Cmd {
 	return nil
 }
 
-func printFinalStatus(m model) {
+func printFinalStatus(m model) string {
 	m.FinishTime = time.Now()
 	elapsed := m.FinishTime.Sub(m.StartTime)
-	fmt.Printf("\n\nFinished! Time taken: %v.\nMistakes made: %d\nFinal result: %q", elapsed, m.Mistakes, m.Input)
+	return fmt.Sprintf("Finished! Time taken: %v.\nMistakes made: %d\nFinal result: %q\n", elapsed, m.Mistakes, m.Input)
 }
 
 func prepareCurrentStatus(m model) string {
@@ -80,8 +80,7 @@ func (m model) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 
 func (m model) View() string {
 	if m.Done {
-		printFinalStatus(m)
-		return ""
+		return printFinalStatus(m)
 	}
 	return prepareCurrentStatus(m)
 }
