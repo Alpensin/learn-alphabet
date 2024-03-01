@@ -16,6 +16,7 @@ type model struct {
 	StartTime    time.Time
 	FinishTime   time.Time
 	DisplayTimer bool
+	Mistakes     int
 	Done         bool
 }
 
@@ -40,14 +41,14 @@ func (m model) Init() btea.Cmd {
 	return nil
 }
 
-func prepareFinalStatus(m model) string {
+func printFinalStatus(m model) {
 	m.FinishTime = time.Now()
 	elapsed := m.FinishTime.Sub(m.StartTime)
-	return fmt.Sprintf("\nFinished! Time taken: %v\nResult: %s", elapsed, m.Input)
+	fmt.Printf("\n\nFinished! Time taken: %v.\nMistakes made: %d\nFinal result: %q", elapsed, m.Mistakes, m.Input)
 }
 
 func prepareCurrentStatus(m model) string {
-	return fmt.Sprintf("Type the alphabet: a to z\n\n%s", m.Input)
+	return fmt.Sprintf("Type the alphabet: a to z\n%s", m.Input)
 }
 
 func (m model) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
@@ -64,6 +65,8 @@ func (m model) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 			tmp := m.Input + msg.String()
 			if tmp == alphabet[0:len(tmp)] {
 				m.Input = tmp
+			} else {
+				m.Mistakes++
 			}
 			if len(tmp) == len(alphabet) {
 				m.Done = true
@@ -77,7 +80,8 @@ func (m model) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 
 func (m model) View() string {
 	if m.Done {
-		return prepareFinalStatus(m)
+		printFinalStatus(m)
+		return ""
 	}
 	return prepareCurrentStatus(m)
 }
