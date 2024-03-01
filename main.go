@@ -19,6 +19,7 @@ type model struct {
 	Mistakes         int
 	LastInputMistake string
 	Done             bool
+	CurPosition      int
 }
 
 func initialModel() model {
@@ -67,10 +68,11 @@ func (m model) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 		case "ctrl+c", "enter":
 			return m, btea.Quit
 		default:
-			tmp := m.Input + msg.String()
-			if tmp == alphabet[0:len(tmp)] {
+			tmp := msg.String()
+			if tmp == string(alphabet[m.CurPosition]) {
 				m.LastInputMistake = ""
-				m.Input = tmp
+				m.Input = m.Input + tmp
+				m.CurPosition++
 			} else {
 				m.LastInputMistake = msg.String()
 				m.Mistakes++
