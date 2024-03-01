@@ -12,12 +12,13 @@ import (
 const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 type model struct {
-	Input        string
-	StartTime    time.Time
-	FinishTime   time.Time
-	DisplayTimer bool
-	Mistakes     int
-	Done         bool
+	Input            string
+	StartTime        time.Time
+	FinishTime       time.Time
+	DisplayTimer     bool
+	Mistakes         int
+	LastInputMistake string
+	Done             bool
 }
 
 func initialModel() model {
@@ -48,7 +49,11 @@ func printFinalStatus(m model) string {
 }
 
 func prepareCurrentStatus(m model) string {
-	return fmt.Sprintf("Type the alphabet: a to z\n%s", m.Input)
+	mistakeInfo := ""
+	if m.LastInputMistake != "" {
+		mistakeInfo = fmt.Sprintf("\n%s not expected. Try again\n", m.LastInputMistake)
+	}
+	return fmt.Sprintf("Type the alphabet: a to z\n%s%s", m.Input, mistakeInfo)
 }
 
 func (m model) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
@@ -64,11 +69,13 @@ func (m model) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 		default:
 			tmp := m.Input + msg.String()
 			if tmp == alphabet[0:len(tmp)] {
+				m.LastInputMistake = ""
 				m.Input = tmp
 			} else {
+				m.LastInputMistake = msg.String()
 				m.Mistakes++
 			}
-			if len(tmp) == len(alphabet) {
+			if len(m.Input) == len(alphabet) {
 				m.Done = true
 				return m, btea.Quit
 			}
