@@ -23,12 +23,13 @@ type model struct {
 }
 
 func initialModel(alphabet string) model {
+	a := []rune(alphabet)
 	return model{
-		Input:        []rune{},
+		Input:        make([]rune, 0, len(a)),
 		StartTime:    time.Time{},
 		FinishTime:   time.Time{},
 		DisplayTimer: false,
-		alphabet:     []rune(alphabet),
+		alphabet:     a,
 	}
 }
 
