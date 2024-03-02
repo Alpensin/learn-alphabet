@@ -71,7 +71,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			tmp := msg.Runes
 			if len(tmp) != 1 {
-				return m, tea.Printf("unexpected symbols: %s\n", string(tmp))
+				return m, tea.Printf("unexpected symbols: %s\nExpecting one letter", string(tmp))
 			}
 			if tmp[0] == m.alphabet[m.CurPosition] {
 				m.LastInputMistake = ""
