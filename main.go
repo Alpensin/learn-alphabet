@@ -10,26 +10,37 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type timer struct {
+	startTime    time.Time
+	finishTime   time.Time
+	displayTimer bool
+}
+
+type mistakes struct {
+	count           int
+	lastMistakeText string
+}
+
+type status struct {
+	input       []rune
+	done        bool
+	curPosition int
+	mistakes    mistakes
+}
+
 type model struct {
-	Input            []rune
-	StartTime        time.Time
-	FinishTime       time.Time
-	DisplayTimer     bool
-	Mistakes         int
-	LastInputMistake string
-	Done             bool
-	CurPosition      int
-	alphabet         []rune
+	timer    timer
+	alphabet []rune
+	status   status
 }
 
 func initialModel(alphabet string) model {
 	a := []rune(alphabet)
 	return model{
-		Input:        make([]rune, 0, len(a)),
-		StartTime:    time.Time{},
-		FinishTime:   time.Time{},
-		DisplayTimer: false,
-		alphabet:     a,
+		status: status{
+			input: make([]rune, 0, len(a)),
+		},
+		alphabet: a,
 	}
 }
 
@@ -46,23 +57,23 @@ func (m model) Init() tea.Cmd {
 }
 
 func printFinalStatus(m model) string {
-	m.FinishTime = time.Now()
-	elapsed := m.FinishTime.Sub(m.StartTime)
-	return fmt.Sprintf("Finished! Time taken: %v.\nMistakes made: %d\nFinal result: %s\n", elapsed, m.Mistakes, string(m.Input))
+	m.timer.finishTime = time.Now()
+	elapsed := m.timer.finishTime.Sub(m.timer.startTime)
+	return fmt.Sprintf("Finished! Time taken: %v.\nMistakes made: %d\nFinal result: %s\n", elapsed, m.status.mistakes.count, string(m.status.input))
 }
 
 func prepareCurrentStatus(m model) string {
 	mistakeInfo := ""
-	if m.LastInputMistake != "" {
-		mistakeInfo = fmt.Sprintf("\n%s not expected. Try again\n", m.LastInputMistake)
+	if m.status.mistakes.lastMistakeText != "" {
+		mistakeInfo = fmt.Sprintf("\n%s not expected. Try again\n", m.status.mistakes.lastMistakeText)
 	}
-	return fmt.Sprintf("type the alphabet letter by letter\n%s%s", string(m.Input), mistakeInfo)
+	return fmt.Sprintf("type the alphabet letter by letter\n%s%s", string(m.status.input), mistakeInfo)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if !m.DisplayTimer {
-		m.DisplayTimer = true
-		m.StartTime = time.Now()
+	if !m.timer.displayTimer {
+		m.timer.displayTimer = true
+		m.timer.startTime = time.Now()
 	}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -70,20 +81,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "enter":
 			return m, tea.Quit
 		default:
-			tmp := msg.Runes
-			if len(tmp) != 1 {
-				return m, tea.Printf("unexpected symbols: %s\nExpecting one letter", string(tmp))
+			if len(msg.Runes) != 1 {
+				return m, tea.Printf("unexpected symbols: %s\nExpecting one letter", string(msg.String()))
 			}
-			if tmp[0] == m.alphabet[m.CurPosition] {
-				m.LastInputMistake = ""
-				m.Input = append(m.Input, tmp[0])
-				m.CurPosition++
+			if msg.Runes[0] == m.alphabet[m.status.curPosition] {
+				m.status.mistakes.lastMistakeText = ""
+				m.status.input = append(m.status.input, msg.Runes[0])
+				m.status.curPosition++
 			} else {
-				m.LastInputMistake = msg.String()
-				m.Mistakes++
+				m.status.mistakes.lastMistakeText = msg.String()
+				m.status.mistakes.count++
 			}
-			if len(m.Input) == len(m.alphabet) {
-				m.Done = true
+			if len(m.status.input) == len(m.alphabet) {
+				m.status.done = true
 				return m, tea.Quit
 			}
 		}
@@ -93,7 +103,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	if m.Done {
+	if m.status.done {
 		return printFinalStatus(m)
 	}
 	return prepareCurrentStatus(m)
