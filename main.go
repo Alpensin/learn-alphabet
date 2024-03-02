@@ -6,13 +6,12 @@ import (
 	"os"
 	"time"
 
-	btea "github.com/charmbracelet/bubbletea"
+	"github.com/Alpensin/learn-alphabet/alphabet"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
-const alphabet = "abcdefghijklmnopqrstuvwxyz"
-
 type model struct {
-	Input            string
+	Input            []rune
 	StartTime        time.Time
 	FinishTime       time.Time
 	DisplayTimer     bool
@@ -20,33 +19,35 @@ type model struct {
 	LastInputMistake string
 	Done             bool
 	CurPosition      int
+	alphabet         []rune
 }
 
-func initialModel() model {
+func initialModel(alphabet string) model {
 	return model{
-		Input:        "",
+		Input:        []rune{},
 		StartTime:    time.Time{},
 		FinishTime:   time.Time{},
 		DisplayTimer: false,
+		alphabet:     []rune(alphabet),
 	}
 }
 
 func main() {
-	p := btea.NewProgram(initialModel())
+	p := tea.NewProgram(initialModel(alphabet.EN))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running the program: %v", err)
 		os.Exit(1)
 	}
 }
 
-func (m model) Init() btea.Cmd {
+func (m model) Init() tea.Cmd {
 	return nil
 }
 
 func printFinalStatus(m model) string {
 	m.FinishTime = time.Now()
 	elapsed := m.FinishTime.Sub(m.StartTime)
-	return fmt.Sprintf("Finished! Time taken: %v.\nMistakes made: %d\nFinal result: %q\n", elapsed, m.Mistakes, m.Input)
+	return fmt.Sprintf("Finished! Time taken: %v.\nMistakes made: %d\nFinal result: %s\n", elapsed, m.Mistakes, string(m.Input))
 }
 
 func prepareCurrentStatus(m model) string {
@@ -54,32 +55,35 @@ func prepareCurrentStatus(m model) string {
 	if m.LastInputMistake != "" {
 		mistakeInfo = fmt.Sprintf("\n%s not expected. Try again\n", m.LastInputMistake)
 	}
-	return fmt.Sprintf("Type the alphabet: a to z\n%s%s", m.Input, mistakeInfo)
+	return fmt.Sprintf("type the alphabet letter by letter\n%s%s", string(m.Input), mistakeInfo)
 }
 
-func (m model) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.DisplayTimer {
 		m.DisplayTimer = true
 		m.StartTime = time.Now()
 	}
 	switch msg := msg.(type) {
-	case btea.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "enter":
-			return m, btea.Quit
+			return m, tea.Quit
 		default:
-			tmp := msg.String()
-			if tmp == string(alphabet[m.CurPosition]) {
+			tmp := msg.Runes
+			if len(tmp) != 1 {
+				return m, tea.Printf("unexpected symbols: %s\n", string(tmp))
+			}
+			if tmp[0] == m.alphabet[m.CurPosition] {
 				m.LastInputMistake = ""
-				m.Input = m.Input + tmp
+				m.Input = append(m.Input, tmp[0])
 				m.CurPosition++
 			} else {
 				m.LastInputMistake = msg.String()
 				m.Mistakes++
 			}
-			if len(m.Input) == len(alphabet) {
+			if len(m.Input) == len(m.alphabet) {
 				m.Done = true
-				return m, btea.Quit
+				return m, tea.Quit
 			}
 		}
 	}
