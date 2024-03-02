@@ -22,10 +22,10 @@ type mistakes struct {
 }
 
 type status struct {
-	input       []rune
-	done        bool
-	curPosition int
-	mistakes    mistakes
+	input           []rune
+	done            bool
+	currentPosition int
+	mistakes        mistakes
 }
 
 type model struct {
@@ -57,7 +57,6 @@ func (m model) Init() tea.Cmd {
 }
 
 func printFinalStatus(m model) string {
-	m.timer.finishTime = time.Now()
 	elapsed := m.timer.finishTime.Sub(m.timer.startTime)
 	return fmt.Sprintf("Finished! Time taken: %v.\nMistakes made: %d\nFinal result: %s\n", elapsed, m.status.mistakes.count, string(m.status.input))
 }
@@ -84,15 +83,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(msg.Runes) != 1 {
 				return m, tea.Printf("unexpected symbols: %s\nExpecting one letter", string(msg.String()))
 			}
-			if msg.Runes[0] == m.alphabet[m.status.curPosition] {
-				m.status.mistakes.lastMistakeText = ""
+			if msg.Runes[0] == m.alphabet[m.status.currentPosition] {
 				m.status.input = append(m.status.input, msg.Runes[0])
-				m.status.curPosition++
+				m.status.currentPosition++
 			} else {
 				m.status.mistakes.lastMistakeText = msg.String()
 				m.status.mistakes.count++
 			}
 			if len(m.status.input) == len(m.alphabet) {
+				m.timer.finishTime = time.Now()
 				m.status.done = true
 				return m, tea.Quit
 			}
